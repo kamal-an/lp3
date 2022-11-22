@@ -1,0 +1,948 @@
+﻿1.
+import numpy as np
+import pandas as pd
+pip install numpy
+pip install pandas
+df = pd.read_csv('uber.csv')
+df.head()
+df.columns
+df = df.drop(['Unnamed: 0', 'key'], axis = 1)
+df.head()
+df.columns
+df.isnull().sum()
+df.dropna(axis = 0, inplace = True)
+df.head()
+df.isnull().sum()
+df.pickup_datetime = pd.to_datetime(df.pickup_datetime)
+df.head()
+df['year'] = df['pickup_datetime'].apply(lambda time : time.year)
+df['month'] = df['pickup_datetime'].apply(lambda time : time.month)
+df['day'] = df['pickup_datetime'].apply(lambda time : time.day)
+df['week_day'] = df['pickup_datetime'].apply(lambda time : time.dayofweek)
+df['day_time'] = df['pickup_datetime'].apply(lambda time : time.hour)
+df.head()
+def haversine (lon_1, lon_2, lat_1, lat_2):    
+    lon_1, lon_2, lat_1, lat_2 = map(np.radians, [lon_1, lon_2, lat_1, lat_2]) 
+    diff_lon = lon_2 - lon_1
+    diff_lat = lat_2 - lat_1
+    km = 2 * 6371 * np.arcsin(np.sqrt(np.sin(diff_lat/2.0)**2 + np.cos(lat_1) * np.cos(lat_2) * np.sin(diff_lon/2.0)**2))
+    return km
+df['distance'] = haversine(df['pickup_longitude'], df['dropoff_longitude'], df['pickup_latitude'], df['dropoff_latitude'])
+df.head()
+df['distance'] = df['distance'].astype('float').round(2) 
+df.head()
+import matplotlib.pyplot as plt
+pip install matplotlib
+plt.scatter(df['distance'], df['fare_amount'])
+plt.xlabel("distance")
+plt.ylabel("fare_amount")
+df.drop(df[df['distance'] > 60].index, inplace = True)
+df.drop(df[df['distance'] == 0].index, inplace = True)
+df.drop(df[df['fare_amount'] == 0].index, inplace = True)
+df.drop(df[df['fare_amount'] < 0].index, inplace = True)
+df.drop(df[(df['fare_amount'] > 100) & (df['distance'] < 1)].index, inplace = True )
+df.drop(df[(df['fare_amount'] < 100) & (df['distance'] > 100)].index, inplace = True )
+df.info()
+corr = df.corr()
+corr.style.background_gradient(cmap='BuGn')
+from sklearn.preprocessing import StandardScaler
+pip install sklearn
+x = df['distance'].values.reshape(-1, 1)       
+y = df['fare_amount'].values.reshape(-1, 1) 
+std = StandardScaler()
+y_std = std.fit_transform(y)
+x_std = std.fit_transform(x)
+print(x_std, y_std)
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_std, y_std, test_size=0.2, random_state=0)
+from sklearn.linear_model import LinearRegression
+l_reg = LinearRegression()
+l_reg.fit(x_train, y_train)
+print("Training set score: {:.5f}".format(l_reg.score(x_train, y_train)))
+print("Test set score: {:.5f}".format(l_reg.score(x_test, y_test)))
+y_pred = l_reg.predict(x_test)
+df1 = {'Actual': y_test, 'Predicted': y_pred}
+print(df1)
+from sklearn.ensemble import RandomForestRegressor
+regressor = RandomForestRegressor(n_estimators = 100, random_state = 0)
+regressor.fit(x_train, y_train)  
+print("Training set score: {:.5f}".format(regressor.score(x_train, y_train)))
+print("Test set score: {:.5f}".format(regressor.score(x_test, y_test)))
+y_pred1 = regressor.predict(x_test)
+df2 = {'Actual': y_test, 'Predicted': y_pred1}
+print(df2)
+from sklearn.metrics import mean_squared_error
+MSE_linear_regression = mean_squared_error(y_test, y_pred)
+MSE_random_forest = mean_squared_error(y_test, y_pred1)
+print(MSE_linear_regression, MSE_random_forest)
+RMSE_linear_regression = np.sqrt(MSE_linear_regression)
+RMSE_random_forest = np.sqrt(MSE_random_forest)
+print(RMSE_linear_regression, RMSE_random_forest)
+from sklearn.metrics import r2_score
+r2_score(y_test, y_pred)
+
+
+2.
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
+df = pd.read_csv("./emails.csv")
+df.head()
+df.isnull().sum()
+X = df.iloc[:,1:3001]
+X
+Y = df.iloc[:,-1].values
+Y
+train_x,test_x,train_y,test_y = train_test_split(X,Y,test_size = 0.25)
+svc = SVC(C=1.0,kernel='rbf',gamma='auto')         
+svc.fit(train_x,train_y)
+y_pred2 = svc.predict(test_x)
+print("Accuracy Score for SVC : ", accuracy_score(y_pred2,test_y))
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size = 0.2, random_state=42)
+knn = KNeighborsClassifier(n_neighbors=7)
+knn.fit(X_train, y_train)
+print(knn.predict(X_test))
+print(knn.score(X_test, y_test))
+
+
+3.
+import numpy as np 
+import pandas as pd 
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
+from tensorflow import keras
+from sklearn.metrics import classification_report,accuracy_score
+bank_data = pd.read_csv('Churn_Modelling.csv')
+bank_data.head()
+bank_data.info()
+bank_data.describe()
+bank_data.shape
+bank_data.isnull().sum()
+bank_data['Geography'].unique()
+bank_data['Gender'].unique()
+label = LabelEncoder()
+bank_data['Geography'] = label.fit_transform(bank_data['Geography'])
+bank_data['Gender'] = label.fit_transform(bank_data['Gender'])
+bank_data.head()
+bank_data.info()
+sns.pairplot(data=bank_data)
+sns.heatmap(data=bank_data.corr())
+bank_data = bank_data.drop(['RowNumber','Surname'],axis=1)
+bank_data.head()
+x = bank_data.drop(['Exited'],axis=1)
+y = bank_data['Exited']
+x_train,x_test,y_train,y_test = train_test_split(x,y,train_size=0.2,random_state=0)
+len(x_train)
+len(x_test)
+model = keras.Sequential([
+    keras.layers.Dense(units=25,activation='relu'),
+    keras.layers.Dense(units=20,activation='relu'),
+    keras.layers.Dense(units=1,activation='sigmoid')
+])
+model.compile(optimizer='adam',loss='binary_crossentropy',metrics='accuracy')
+model.fit(x_train,y_train,epochs=100)
+y_preds = model.predict(x_test)
+y_preds
+y_pred = []
+for element in y_preds:
+    if element > 0.5:
+        y_pred.append(1)
+    else:
+        y_pred.append(0)
+y_pred[:15]
+print(classification_report(y_test,y_pred))
+acc_score = accuracy_score(y_test,y_pred) * 100
+acc_score
+
+
+4.
+cur_x, rate, precision, previous_step_size, max_iters, iters = 2, 0.01, 0.000001, 1, 10000, 0
+df = lambda x: 2*(x+3)
+while previous_step_size > precision and iters < max_iters:
+    prev_x = cur_x
+    cur_x = cur_x - rate * df(prev_x)
+    previous_step_size = abs(cur_x - prev_x)
+    iters = iters+1
+    print("Iteration",iters,"\nX value is",cur_x)
+print("The local minimum occurs at", cur_x)
+import matplotlib.pyplot as plt
+import numpy as np
+x = np.linspace(-5,5,100)
+y = (x + 3) ** 2
+fig = plt.figure()
+plt.plot(x,y, 'g')
+plt.show()
+
+
+5.
+import numpy as np
+import pandas as pd 
+import math
+from scipy.spatial import distance
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score
+import seaborn as sns
+import matplotlib.pyplot as plt
+get_ipython().run_line_magic('matplotlib', 'inline')
+DataSet = pd.DataFrame()
+DataSet = pd.read_csv("diabetes.csv")
+DataSet.head(10)
+for column in DataSet.columns[1:-3]:
+    DataSet[column].replace(0,np.NaN, inplace=True)
+    DataSet[column].fillna(round(DataSet[column].mean(skipna=True)), inplace=True)
+DataSet.head(10)
+X = DataSet.iloc[:, :8]
+y = DataSet.iloc[:, 8:]
+DataSet.head()
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2,random_state=0)
+def distance_with_all_train_Points(X_train, X_test):
+    eculidean_distance = {}
+    for data_point in X_test.itertuples():
+        for point in X_train.itertuples():
+            eculidean_distance[tuple([list(data_point)[0],list(point)[0]])] = distance.euclidean(list(data_point)[1:], list(point)[1:])
+    return eculidean_distance
+def k_nearest_neighbors(eculidean_distance, X_test, y, k):
+        all_neighbours = {}
+        Output_labels = []
+        for data_point in X_test.itertuples():
+            for key, value in eculidean_distance.items():
+                if key[0] == list(data_point)[0]:
+                    all_neighbours[key] = value
+                else:
+                    continue
+            i, yes, no = 0, 0, 0
+            for item in sorted(all_neighbours.items(), key = lambda x: x[1]):
+                if i < k:
+                    if(y.iloc[item[0][1]]["Outcome"] == 1):
+                        yes += 1
+                    else:
+                        no += 1
+                    i += 1
+            if(yes > no):
+                Output_labels.append(1)
+            else:
+                Output_labels.append(0)
+            all_neighbours.clear()            
+        return Output_labels
+eculidean_distance = distance_with_all_train_Points(X_train, X_test)
+Output_labels = k_nearest_neighbors(eculidean_distance, X_test, y, 5)
+neighbor = KNeighborsClassifier(n_neighbors=5)
+neighbor.fit(X_train, np.array(y_train).ravel())
+y_pred = neighbor.predict(X_test)
+y_pred
+neighbor.score(X_test, Output_labels)
+from sklearn.metrics import recall_score
+recall_score(y_test, y_pred, average=None)
+from sklearn.metrics import f1_score
+f1_score(y_test, y_pred, average=None)
+from sklearn.metrics import precision_score
+precision_score(y_test, y_pred, average=None)
+
+
+6.
+import pandas as pd
+import numpy as np
+df = pd.read_csv('./sales_data_sample.csv', encoding='unicode_escape')
+df.head
+df.info
+to_drop = ['ADDRESSLINE1', 'ADDRESSLINE2', 'STATE', 'POSTALCODE', 'PHONE']
+df = df.drop(to_drop, axis=1)
+df.isnull().sum()
+df.dtypes
+df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
+import datetime as dt
+snapshot_date = df['ORDERDATE'].max() + dt.timedelta(days = 1)
+df_RFM = df.groupby(['CUSTOMERNAME']).agg({
+    'ORDERDATE' : lambda x : (snapshot_date - x.max()).days,
+    'ORDERNUMBER' : 'count',
+    'SALES' : 'sum'
+})
+df_RFM.rename(columns = {
+    'ORDERDATE' : 'Recency',
+    'ORDERNUMBER' : 'Frequency',
+    'SALES' : 'MonetaryValue'
+}, inplace=True)
+df_RFM.head()
+df_RFM['M'] = pd.qcut(df_RFM['MonetaryValue'], q = 4, labels = range(1,5))
+df_RFM['R'] = pd.qcut(df_RFM['Recency'], q = 4, labels = list(range(4,0,-1)))
+df_RFM['F'] = pd.qcut(df_RFM['Frequency'], q = 4, labels = range(1,5))
+df_RFM.head()
+df_RFM['RFM_Score'] = df_RFM[['R', 'M', 'F']].sum(axis=1)
+df_RFM.head()
+def rfm_level(df):
+    if bool(df['RFM_Score'] >= 10):
+        return 'High Value Customer'
+    
+    elif bool(df['RFM_Score'] < 10) and bool(df['RFM_Score'] >= 6):
+        return 'Mid Value Customer'
+    else:
+        return 'Low Value Customer'
+df_RFM['RFM_Level'] = df_RFM.apply(rfm_level, axis = 1)
+df_RFM.head()
+data = df_RFM[['Recency', 'Frequency', 'MonetaryValue']]
+data.head()
+data_log = np.log(data)
+data_log.head()
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(data_log)
+data_normalized = scaler.transform(data_log)
+data_normalized = pd.DataFrame(data_normalized, index = data_log.index, columns=data_log.columns)
+data_normalized.describe().round(2)
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import KMeans
+sse = {}
+for k in range(1, 21):
+    kmeans = KMeans(n_clusters = k, random_state = 1)
+    kmeans.fit(data_normalized)
+    sse[k] = kmeans.inertia_
+plt.figure(figsize=(10,6))
+plt.title('The Elbow Method')
+plt.xlabel('K')
+plt.ylabel('SSE')
+plt.style.use('ggplot')
+sns.pointplot(x=list(sse.keys()), y = list(sse.values()))
+plt.text(4.5, 60, "Largest Angle", bbox = dict(facecolor = 'lightgreen', alpha = 0.5))
+plt.show()
+kmeans = KMeans(n_clusters=5, random_state=1)
+kmeans.fit(data_normalized)
+cluster_labels = kmeans.labels_
+data_rfm = data.assign(Cluster = cluster_labels)
+data_rfm.head()
+
+
+PRO.
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import math
+titanic = pd.read_csv('train.csv')
+titanic.head()
+titanic.shape
+sns.countplot(x = 'Survived', data = titanic)
+sns.countplot(x = 'Survived', hue = 'Sex', data = titanic, palette = 'spring')
+sns.countplot(x = 'Survived', hue = 'Pclass', data = titanic, palette = 'winter')
+titanic['Age'].plot.hist()
+titanic['Fare'].plot.hist(bins = 20, figsize = (10,5))
+sns.countplot(x = 'SibSp', data = titanic, palette = 'rocket')
+titanic['Parch'].plot.hist()
+sns.countplot(x = 'Parch', data = titanic, palette = 'summer')
+titanic.isnull().sum()
+sns.heatmap(titanic.isnull(), cmap = 'spring')
+sns.boxplot(x = 'Pclass', y = 'Age', data = titanic)
+titanic.head()
+titanic.drop('Cabin', axis = 1, inplace = True)
+titanic.head(3)
+titanic.dropna(inplace = True)
+sns.heatmap(titanic.isnull(), cmap = 'spring')
+titanic.isnull().sum()
+pd.get_dummies(titanic['Sex']).head()
+sex = pd.get_dummies(titanic['Sex'], drop_first = True)
+sex.head(3)
+embark = pd.get_dummies(titanic['Embarked'])
+embark.head(3)
+embark = pd.get_dummies(titanic['Embarked'], drop_first = True)
+embark.head(3)
+Pcl = pd.get_dummies(titanic['Pclass'], drop_first = True)
+Pcl.head(3)
+titanic = pd.concat([titanic, sex, embark, Pcl], axis = 1)
+titanic.head(3)
+titanic.drop(['Name', 'PassengerId', 'Pclass', 'Ticket', 'Sex', 'Embarked'], axis = 1, inplace = True)
+titanic.head(3)
+X = titanic.drop('Survived', axis = 1)
+y= titanic['Survived']
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.55, random_state = 4)
+from sklearn.linear_model import LogisticRegression
+lm = LogisticRegression(max_iter = 1000)
+lm.fit(X_train, y_train)
+prediction = lm.predict(X_test)
+from sklearn.metrics import classification_report
+classification_report(y_test, prediction)
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_test, prediction)
+from sklearn.metrics import accuracy_score
+accuracy_score(y_test, prediction)
+
+
+#include <bits/stdc++.h>
+using namespace std;
+int knapSack(int W, int wt[], int val[], int n) {
+    int i, w;
+    int K[2][W + 1];
+    for (i = 0; i <= n; i++) {
+        for (w = 0; w <= W; w++) {
+            if (i == 0 || w == 0)
+                K[i % 2][w] = 0;
+            else if (wt[i - 1] <= w)
+                K[i % 2][w] = max(
+                    val[i - 1] + K[(i - 1) % 2][w - wt[i - 1]], K[(i - 1) % 2][w]);
+            else
+                K[i % 2][w] = K[(i - 1) % 2][w];
+        }
+    }
+    return K[n % 2][W];
+}
+int main() {
+    int N, W;
+    cout << "Enter the number of items: ";
+    cin >> N;
+    cout << "Enter the total maximum weight: ";
+    cin >> W;
+    int val[N], wt[N];
+    cout << "Enter all values in a line: ";
+    for(int i = 0; i < N; i++) 
+        cin >> val[i];
+    cout << "Enter all weights in a line: ";
+    for(int i = 0; i < N; i++) 
+        cin >> wt[i];
+    cout << knapSack(W, wt, val, N);
+    return 0;
+}
+
+
+
+
+
+
+#include<bits/stdc++.h>
+using namespace std;
+
+
+const int maxn = 1e3+5;
+int dp[maxn][maxn];
+
+
+int binomialCoeff(int n, int k) {
+    // base case
+    if (k > n) {
+        return 0;
+    }
+
+
+    if (k == 0 || k == n) {
+        return 1;
+    }
+
+
+    if (dp[n][k] != -1 ){
+        return dp[n][k];
+    }
+
+
+    return dp[n][k] = binomialCoeff(n-1, k-1) + binomialCoeff(n-1, k);
+
+
+}
+
+
+int main() {
+    int n, k;
+    cin >> n >> k;
+    
+    memset(dp, -1, sizeof(dp));
+    cout << binomialCoeff(n, k);
+}
+
+
+
+
+#include<bits/stdc++.h>
+using namespace std;
+int fib_recur(int n) {
+    if (n <= 1)
+        return n;
+
+
+    return fib_recur(n - 1) + fib_recur(n - 2);
+}
+int fib_iter(int n) {
+    int f[n + 2];
+    int i;
+    f[0] = 0;
+    f[1] = 1;
+    for(i = 2; i <= n; i++) {
+       f[i] = f[i - 1] + f[i - 2];
+    }
+    return f[n];
+}
+int main() {
+    cout << "Enter any number to find Fibonacci number at that place\n";
+    int n; cin >> n;
+    cout << "Recursive " << fib_recur(n) << '\n';
+    cout << "Iterative " << fib_iter(n) << '\n';
+    return 0;
+}
+
+
+
+
+
+
+#include <bits/stdc++.h>
+using namespace std;
+struct Item {
+    int value, weight;
+    Item(int value, int weight) {
+        this->value = value;
+        this->weight = weight;
+    }
+};
+bool cmp(struct Item *a, struct Item *b) {
+    double r1 = (double)a -> value / (double)a -> weight;
+    double r2 = (double)b -> value / (double)b -> weight;
+    return r1 > r2;
+}
+double fractionalKnapsack(int W, vector<Item*> arr, int N) {
+    sort(arr.begin(), arr.end(), cmp);
+    double finalvalue = 0.0;
+    for (int i = 0; i < N; i++) {
+        if (arr[i] -> weight <= W) {
+            W -= arr[i] -> weight;
+            finalvalue += arr[i] -> value;
+        }
+        else {
+            finalvalue
+                += arr[i] -> value
+                * ((double)W / (double)arr[i] -> weight);
+            break;
+        }
+    }
+    return finalvalue;
+}
+int main() {
+    cout << "Enter total weight capacity: ";
+    int W; cin >> W;
+    cout << "Enter number of items: ";
+    int N; cin >> N;
+    cout << "Enter each vale and its weight, space separated\n";
+        vector<Item*> arr;
+    for(int i = 0; i < N; i++) {
+        int val, wt;
+        cin >> val >> wt;
+        Item *temp = new Item(val, wt);
+        arr.push_back(temp);
+    }
+    cout << "Maximum value we can obtain = " << fractionalKnapsack(W, arr, N);
+    return 0;
+}
+
+
+
+
+
+
+#include <bits/stdc++.h>
+using namespace std;
+struct Job {
+    char id;
+    int dead;
+    int profit;
+};
+bool cmp(Job a, Job b) {
+    return (a.profit > b.profit);
+}
+void printJobScheduling(Job arr[], int n) {
+    sort(arr, arr+n, cmp);
+    int results[n];
+    bool slot[n];
+    for (int i = 0; i < n; i++) {
+        slot[i] = false;
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = min(n, arr[i].dead)-1; j >= 0; j--) {
+            if (slot[j] == false) {
+                results[j] = i;
+                slot[j] = true;
+                break;
+            }
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        if (slot[i]) {
+            cout << arr[results[i]].id << " ";
+        }
+    }
+}
+int main() {   
+    Job arr[] = { { 'a', 2, 100 }, { 'b', 1, 19 },{ 'c', 2, 27 },{ 'd', 1, 25 },{ 'e', 3, 15 } };
+    int n = sizeof(arr) / sizeof(arr[0]);
+    printJobScheduling(arr, n);
+    return 0;
+}
+
+
+
+
+#include <bits/stdc++.h>
+using namespace std;
+#define MAX 4
+#define MAX_THREAD 4
+int matA[MAX][MAX];
+int matB[MAX][MAX];
+int matC[MAX][MAX];
+int step_i = 0;
+
+
+void* multi(void* arg) {
+        int i = step_i++;
+        for (int j = 0; j < MAX; j++)
+        for (int k = 0; k < MAX; k++)
+                matC[i][j] += matA[i][k] * matB[k][j];
+        return arg;
+}
+int main() {
+        for (int i = 0; i < MAX; i++) {
+                for (int j = 0; j < MAX; j++) {
+                        matA[i][j] = rand() % 10;
+                        matB[i][j] = rand() % 10;
+                }
+        }
+        cout << endl << "Matrix A" << endl;
+        for (int i = 0; i < MAX; i++) {
+                for (int j = 0; j < MAX; j++)
+                        cout << matA[i][j] << " ";
+                cout << endl;
+        }
+        cout << endl << "Matrix B" << endl;
+        for (int i = 0; i < MAX; i++) {
+                for (int j = 0; j < MAX; j++)
+                        cout << matB[i][j] << " ";        
+                cout << endl;
+        }
+        pthread_t threads[MAX_THREAD];
+        for (int i = 0; i < MAX_THREAD; i++) {
+                int* p;
+                pthread_create(&threads[i], NULL, multi, (void*)(p));
+        }
+        for (int i = 0; i < MAX_THREAD; i++)
+                pthread_join(threads[i], NULL);
+        cout << endl << "Multiplication of A and B" << endl;
+        for (int i = 0; i < MAX; i++) {
+                for (int j = 0; j < MAX; j++)
+                        cout << matC[i][j] << " ";        
+                cout << endl;
+        }
+        return 0;
+}
+
+
+
+
+#include <bits/stdc++.h>
+using namespace std;
+bool check(int qn, int c, vector <int> &col){
+    for(int i = 0; i < (int)col.size(); i++){
+        if(col[i] == -1)
+            continue;            
+        if(abs(qn - col[i]) == abs(c-i))
+            return false;            
+    }        
+    return true;        
+
+
+}
+void nqueens(int n, int qn, vector <int> &col, vector <vector<string>> &ans, vector <string> &curr){
+    if(qn == n){           
+        ans.push_back(curr);
+        return ;
+    }
+    for(int c = 0; c < n; c++){
+        if(col[c] != -1)
+            continue;
+        else if(check(qn, c, col)){    
+            col[c] = qn;
+            curr[qn][c] = 'Q';
+            nqueens(n, qn + 1, col, ans, curr);
+            col[c] = -1;
+            curr[qn][c] = '.';
+
+
+        }
+        else
+            continue;                
+    }
+}
+void solveNQueens(int n) {
+    vector <vector<string>> ans;
+    vector <int> col(n, -1);        
+    vector <string> curr(n, string(n, '.'));
+    nqueens(n, 0, col, ans, curr);
+    for(auto u : ans){
+        for(auto r : u){
+            cout << r << "\n";
+        }
+        cout << "\n" << "\n";
+    }
+    return;
+}
+int main() {
+    cout << "Enter number of queens: ";
+    int n;
+    cin >> n;
+    solveNQueens(n);
+    return 0;
+}
+
+
+
+
+
+
+
+
+pragma solidity 0.4.25;
+
+
+contract Bank {
+
+
+    int bal;
+
+
+    constructor() public {
+        bal = 0;
+    }
+
+
+    function getBalance() public view returns(int) {
+        return bal;
+    }
+
+
+    function withdraw(int amt) public {
+        require(amt > 0, "Invalid Input");
+        require(amt < bal, "Insufficient balance");
+        bal = bal - amt;
+    }
+
+
+    function deposit(int amt) public {
+        require(amt > 0, "Invalid Input");
+        bal = bal + amt;
+    }
+}
+
+
+
+
+
+
+
+
+// SPDX-License-Identifier: MIT
+
+
+pragma solidity ^0.5.16;
+contract Election{
+
+
+    struct Candidate {
+        uint id;
+        string name;
+        uint voteCount;
+    }
+
+
+    mapping (address => bool) public voters;
+
+
+    mapping(uint => Candidate) public candidates;
+
+
+    uint public candidatesCount;
+    event votedEvent (
+        uint indexed candidateId
+    );
+
+
+    constructor() public {
+        addCandidate("Candidate 1");
+        addCandidate("Candidate 2");
+    }
+
+
+    function addCandidate(string memory _name) private {
+    candidatesCount++;
+    candidates[candidatesCount] = Candidate(candidatesCount, _name, 0);
+    }
+    function vote (uint _candidateId) public {
+    require(!voters[msg.sender]);
+
+
+    require(_candidateId > 0 && _candidateId <= candidatesCount);
+
+
+    voters[msg.sender] = true;
+
+
+    candidates[_candidateId].voteCount++;
+
+
+    emit votedEvent(_candidateId);
+    }
+}
+
+
+
+
+
+
+// SPDX-License-Identifier: MIT
+pragma solidity >= 0.7.0;
+
+
+contract Student_management{
+
+
+        struct Student{
+                int stud_id;
+                string Name;
+                string Department;
+        }
+
+
+        Student[] Students;
+
+
+        function add_stud(int stud_id, string memory Name, string memory Department) public{
+                Student memory stud = Student(stud_id, Name, Department);
+                Students.push(stud);
+        }
+
+
+        function getStudent(int stud_id) public view returns(string memory, string memory){
+                for(uint i = 0; i < Students.length; i++){
+                        Student memory stud = Students[i];
+                        if(stud.stud_id == stud_id){
+                                return(stud.Name, stud.Department);
+                        }
+                }
+        return("Name Not Found", "Department Not Found");
+        }
+
+
+        //Fallback Function
+        fallback() external payable{
+                Students.push(Student(7, "XYZ", "Mechanical"));
+        }
+}
+
+
+......daa mini................................................
+...........................................................
+#include <bits/stdc++.h>
+using namespace std;
+
+vector <vector<int>> mat1, mat2, mat3;
+int n;
+
+void compute(int r, int c){
+	for(int i = 0; i < n; i++){
+		mat3[r][c] = mat3[r][c] + mat1[r][i] * mat2[i][c];
+	}
+}
+
+int main(){
+
+
+	cin >> n;
+	mat1 = mat2 = mat3 = std::vector<vector<int>> (n, vector <int> (n, 0));
+
+
+	
+	for(int i = 0; i < n; ++i){
+		for(int j = 0; j < n; ++j){
+			cin >> mat1[i][j];
+		}
+	}
+
+	for(int i = 0; i < n; ++i){
+		for(int j = 0; j < n; ++j){
+			cin >> mat2[i][j];
+		}
+	}
+
+	thread threads[n][n];
+
+	for(int i = 0; i < n; ++i){
+		for(int j = 0; j < n; ++j){
+			threads[i][j] = thread(compute, i, j);
+		}
+	}
+
+	for(int i = 0; i < n; ++i){
+		for(int j = 0; j < n; ++j){
+			threads[i][j].join();
+		}
+	}
+
+	for(int i = 0; i < n; ++i){
+		for(int j = 0; j < n; ++j){
+			cout << mat3[i][j] << " ";
+		}
+		cout << "\n";
+	}
+
+
+	return 0;
+}
+
+
+..............................................................................
+..............................................................................
+//SPDX-License-Identifier:MIT
+pragma solidity 0.8.7;
+
+
+contract School
+{
+
+    struct Student{
+        string name;
+        uint256 id;
+    }
+
+    uint256 public fallbackCount;
+    
+    Student[] public students_data; 
+
+    constructor(){
+        fallbackCount=0;
+    }
+    
+    function addStudent(string calldata name, uint256 id) public{
+        students_data.push(Student(name ,id));
+    }
+
+    fallback() external {
+        fallbackCount=fallbackCount+1;
+    }
+
+}
+
+contract StudentFunction{
+
+    function deleteCountry() public {
+        School group1= School(msg.sender);
+        interfaceA(address(group1)).dontExist();
+    }
+
+}
+
+abstract contract interfaceA{
+    function dontExist() external virtual;
+}
